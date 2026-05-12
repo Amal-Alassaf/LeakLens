@@ -55,8 +55,8 @@ Arabic input is supported for passwords, names, and dates.
 ### 1. Clone the repo
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/pii-guardian.git
-cd pii-guardian
+git clone https://github.com/YOUR_USERNAME/LeakLens.git
+cd LeakLens
 ```
 
 ### 2. Install Python 3.11
@@ -171,7 +171,7 @@ Content-Type: application/json
 ## Project structure
 
 ```
-pii-guardian/
+LeakLens/
 ├── backend/
 │   ├── scanner/
 │   │   ├── detector.py      # Core regex engine — 9 PII types
