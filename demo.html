@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>LeakLens — Live Demo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      /* Palette based on image_82891a.png */
+      --bg: #FEFCED;
+      --surface: #ffffff;
+      --surface2: #FAF2B5;
+      --border: #2d3436; /* Darker line art style */
+      --text: #2d3436;
+      --muted: #636e72;
+      --accent: #A767FF;
+      --accent-dim: #E2B2FF;
+      --high: #F0D200; /* Replaced red with the vibrant yellow from the palette */
+      --high-dim: #FAF2B5;
+      --safe: #A767FF;
+      --mono: 'IBM Plex Mono', monospace;
+      --sans: 'IBM Plex Sans', sans-serif;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      background-image: radial-gradient(var(--accent-dim) 0.5px, transparent 0.5px);
+      background-size: 20px 20px; /* Subtle dot pattern like paper */
+    }
+
+    /* ── Header ── */
+    header {
+      border-bottom: 3px solid var(--border);
+      padding: 24px 32px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      background: white;
+    }
+    .logo-icon {
+      width: 40px; height: 40px;
+      background: var(--high);
+      border: 2px solid var(--border);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px;
+      box-shadow: 3px 3px 0px var(--border);
+    }
+    .logo-text { font-size: 20px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
+    .logo-text span { color: var(--accent); }
+    .version-badge {
+      font-family: var(--mono);
+      font-size: 11px;
+      background: var(--accent-dim);
+      border: 2px solid var(--border);
+      padding: 3px 10px;
+      border-radius: 0px;
+      font-weight: bold;
+      color: var(--text);
+      margin-left: auto;
+    }
+
+    /* ── Main layout ── */
+    main {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      max-width: 1100px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 40px 20px;
+      gap: 30px;
+    }
+
+    /* ── Panel (Card Style) ── */
+    .panel {
+      background: var(--surface);
+      border: 3px solid var(--border);
+      border-radius: 0px; /* Sharp corners like the illustration boxes */
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 8px 8px 0px var(--accent-dim);
+    }
+    .panel-header {
+      padding: 14px 18px;
+      border-bottom: 3px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--high);
+    }
+    .panel-title {
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .1em;
+      color: var(--border);
+    }
+    .dot { width: 12px; height: 12px; border: 2px solid var(--border); background: white; }
+    .dot.active { background: var(--accent); }
+
+    /* ── Input panel ── */
+    .input-area {
+      padding: 24px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    textarea {
+      width: 100%;
+      flex: 1;
+      min-height: 200px;
+      background: #fff;
+      border: 2px solid var(--border);
+      border-radius: 0px;
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 14px;
+      padding: 14px;
+      resize: vertical;
+      outline: none;
+    }
+    textarea:focus { background: var(--bg); }
+
+    .controls {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    select {
+      background: white;
+      border: 2px solid var(--border);
+      border-radius: 0px;
+      color: var(--text);
+      font-family: var(--sans);
+      font-size: 13px;
+      padding: 8px 12px;
+      font-weight: 600;
+    }
+
+    .scan-btn {
+      background: var(--accent);
+      color: white;
+      border: 2px solid var(--border);
+      border-radius: 0px;
+      font-size: 13px;
+      font-weight: 700;
+      padding: 10px 24px;
+      cursor: pointer;
+      text-transform: uppercase;
+      box-shadow: 4px 4px 0px var(--border);
+      transition: all 0.1s;
+      margin-left: auto;
+    }
+    .scan-btn:hover { transform: translate(-2px, -2px); box-shadow: 6px 6px 0px var(--border); }
+    .scan-btn:active { transform: translate(2px, 2px); box-shadow: 0px 0px 0px var(--border); }
+
+    .example-chip {
+      font-size: 11px;
+      background: white;
+      border: 2px solid var(--border);
+      color: var(--text);
+      padding: 5px 12px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-bottom: 5px;
+    }
+    .example-chip:hover { background: var(--accent-dim); }
+
+    /* ── Result panel ── */
+    .result-area {
+      padding: 24px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      overflow-y: auto;
+    }
+
+    .status-bar {
+      border: 2px solid var(--border);
+      padding: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      font-size: 12px;
+    }
+    .status-bar.safe { background: var(--accent-dim); color: var(--border); }
+    .status-bar.unsafe { background: var(--high); color: var(--border); }
+    .status-bar.idle { background: #eee; border-color: #ccc; }
+
+    .risk-bar-bg { flex: 1; height: 12px; background: white; border: 2px solid var(--border); }
+    .risk-bar-fill { height: 100%; transition: width .4s ease; background: var(--accent); }
+
+    .detection-card {
+      background: white;
+      border: 2px solid var(--border);
+      padding: 15px;
+      box-shadow: 4px 4px 0px var(--high);
+    }
+
+    .sev-badge {
+      font-size: 10px;
+      font-weight: 800;
+      padding: 2px 8px;
+      border: 1px solid var(--border);
+      text-transform: uppercase;
+    }
+    .sev-high { background: var(--high); }
+    .sev-medium { background: var(--accent-dim); }
+    .sev-low { background: var(--bg); }
+
+    .source-badge {
+      font-size: 10px;
+      border: 1px solid var(--border);
+      padding: 2px 8px;
+      background: #fff;
+    }
+
+    .action-box {
+      background: var(--bg);
+      border: 2px solid var(--border);
+      padding: 15px;
+    }
+
+    .api-input {
+      flex: 1;
+      background: white;
+      border: 2px solid var(--border);
+      padding: 8px;
+      font-family: var(--mono);
+      font-size: 12px;
+    }
+
+    .spinner {
+      width: 20px; height: 20px;
+      border: 3px solid var(--border);
+      border-top-color: white;
+      border-radius: 50%;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo-icon">👁️</div>
+  <div class="logo-text">Leak <span>Lens</span></div>
+  <div class="version-badge">EDITION 0.2.0</div>
+</header>
+
+<main>
+  <div class="panel">
+    <div class="panel-header">
+      <div class="dot active"></div>
+      <div class="panel-title">Scanner Input</div>
+    </div>
+    <div class="input-area">
+      <div class="examples">
+        <span class="example-chip" onclick="loadExample('clean')">✓ Clean</span>
+        <span class="example-chip" onclick="loadExample('email')">📧 Email</span>
+        <span class="example-chip" onclick="loadExample('phone')">📱 Phone + ID</span>
+        <span class="example-chip" onclick="loadExample('card')">💳 Credit card</span>
+        <span class="example-chip" onclick="loadExample('password')">🔑 Password</span>
+        <span class="example-chip" onclick="loadExample('multi')">⚠️ Multi-PII</span>
+        <span class="example-chip" onclick="loadExample('arabic')">🇸🇦 Arabic</span>
+      </div>
+
+      <textarea id="inputText" placeholder="Type a message here..."></textarea>
+
+      <div class="controls">
+        <select id="policySelect">
+          <option value="warn">Policy: Warn</option>
+          <option value="redact">Policy: Redact</option>
+          <option value="block">Policy: Block</option>
+          <option value="strict">Policy: Strict</option>
+        </select>
+        <button class="scan-btn" id="scanBtn" onclick="runScan()">Scan Now →</button>
+      </div>
+
+      <div class="api-row" style="display: flex; gap: 10px; align-items: center; margin-top: 10px;">
+        <input class="api-input" id="apiKeyInput" type="password" placeholder="Anthropic API key" />
+        <label class="ai-toggle" style="font-size: 12px; font-weight: bold; text-transform: uppercase;">
+          <input type="checkbox" id="useAI"> AI Mode
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-header">
+      <div id="resultDot" class="dot"></div>
+      <div class="panel-title">Report & Analysis</div>
+      <div id="loadingSpinner" style="display:none; margin-left:auto;"><div class="spinner"></div></div>
+    </div>
+    <div class="result-area" id="resultArea">
+      <div class="empty-state" style="text-align: center; padding: 40px; color: var(--muted);">
+        <div style="font-size: 40px; margin-bottom: 10px;">📄</div>
+        <div style="font-weight: 700; text-transform: uppercase;">Waiting for Input</div>
+        <p style="font-size: 12px; margin-top: 8px;">Analysis results will appear here after scanning.</p>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+  /* [Functionality remains exactly as provided in original code] */
+  const API_BASE = "http://127.0.0.1:8000";
+
+  const EXAMPLES = {
+    clean: "Can you help me write a Python function to sort a list by the second element of each tuple?",
+    email: "Please send the quarterly report to ahmed.ali@company.com by end of day tomorrow.",
+    phone: "Call me on 0501234567 or reach me at +966501234567. My national ID is 1098765432.",
+    card: "Charge my Visa card 4532015112830366 for the annual subscription renewal.",
+    password: "My password is SuperSecret123! — is it strong enough for a banking app?",
+    multi: "Hi, I'm Sara Hassan. Email me at sara@example.com or call 0551234567. My ID is 2034567891 and I live at 192.168.1.105.",
+    arabic: "كلمة المرور: admin2024 — هل يمكنك مساعدتي في تغييرها؟ اسمي محمد العمري.",
+  };
+
+  function loadExample(key) {
+    document.getElementById("inputText").value = EXAMPLES[key];
+    document.getElementById("resultArea").innerHTML = `<div class="empty-state" style="text-align: center; padding: 40px; color: var(--muted);"><div style="font-size: 40px; margin-bottom: 10px;">📄</div><div style="font-weight: 700; text-transform: uppercase;">Ready to Scan</div></div>`;
+    document.getElementById("resultDot").classList.remove("active");
+  }
+
+  async function runScan() {
+    const text = document.getElementById("inputText").value.trim();
+    if (!text) return;
+
+    const policy = document.getElementById("policySelect").value;
+    const apiKey = document.getElementById("apiKeyInput").value.trim();
+    const useAI = document.getElementById("useAI").checked;
+
+    const btn = document.getElementById("scanBtn");
+    const spinner = document.getElementById("loadingSpinner");
+    btn.disabled = true;
+    spinner.style.display = "block";
+
+    try {
+      const headers = { "Content-Type": "application/json" };
+      if (apiKey) headers["x-api-key"] = apiKey;
+
+      const resp = await fetch(`${API_BASE}/scan`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ text, policy, use_ai: useAI && !!apiKey }),
+      });
+
+      const data = await resp.json();
+      renderResult(data);
+    } catch (e) {
+      document.getElementById("resultArea").innerHTML = `
+        <div class="status-bar unsafe">
+          ⚠️ Connection Error: Is the backend server running?
+        </div>`;
+    } finally {
+      btn.disabled = false;
+      spinner.style.display = "none";
+    }
+  }
+
+  function renderResult(data) {
+    const dot = document.getElementById("resultDot");
+    dot.classList.add("active");
+    dot.style.background = data.is_safe ? "var(--accent)" : "var(--high)";
+
+    let html = "";
+    if (data.is_safe) {
+      html += `<div class="status-bar safe">Verified: Clear of PII</div>`;
+    } else {
+      html += `<div class="status-bar unsafe">Warning: ${data.detections.length} PII Fragments Found</div>`;
+    }
+
+    const riskPct = Math.round(data.risk_score * 100);
+    html += `
+      <div class="risk-row" style="display:flex; align-items:center; gap:10px; font-size:12px; font-weight:800;">
+        <span>RISK LEVEL</span>
+        <div class="risk-bar-bg"><div class="risk-bar-fill" style="width:${riskPct}%"></div></div>
+        <span>${riskPct}%</span>
+      </div>`;
+
+    html += `
+      <div class="action-box">
+        <div style="font-size:11px; font-weight:800; margin-bottom:5px;">SYSTEM ACTION</div>
+        <div style="font-family:var(--mono); font-weight:bold; color:var(--accent)">
+          ${data.action_taken.toUpperCase()}
+        </div>
+        ${data.output_text !== data.original_text ? `<div style="margin-top:10px; font-size:12px; border-top:1px dashed var(--border); padding-top:10px;"><strong>Processed Text:</strong> ${escapeHtml(data.output_text)}</div>` : ""}
+      </div>`;
+
+    if (data.detections.length > 0) {
+      for (const d of data.detections) {
+        html += `
+          <div class="detection-card">
+            <div style="display:flex; gap:8px; margin-bottom:8px;">
+              <span class="sev-badge sev-${d.severity}">${d.severity}</span>
+              <span style="font-weight:700; font-size:12px;">${d.pii_type.toUpperCase()}</span>
+              <span class="source-badge" style="margin-left:auto;">${d.source}</span>
+            </div>
+            <div style="font-family:var(--mono); font-size:12px; margin-bottom:5px;"><strong>Detected:</strong> ${escapeHtml(d.value)}</div>
+            <div style="font-size:11px; color:var(--muted)">${escapeHtml(d.explanation)}</div>
+          </div>`;
+      }
+    }
+    document.getElementById("resultArea").innerHTML = html;
+  }
+
+  function escapeHtml(str) {
+    if (!str) return "";
+    return str.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  }
+
+  document.addEventListener("keydown", e => {
+    if ((e.ctrlKey || e.metaKey) && e.key === "Enter") runScan();
+  });
+</script>
+</body>
+</html>
