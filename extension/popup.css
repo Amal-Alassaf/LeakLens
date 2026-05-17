@@ -1,0 +1,44 @@
+body {
+  margin: 0;
+  font-family: Arial, Helvetica, sans-serif;
+  background: #f9fafb;
+  color: #111827;
+}
+
+.popup {
+  width: 240px;
+  padding: 16px;
+}
+
+h1 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.subtitle {
+  margin: 4px 0 16px;
+  color: #6b7280;
+  font-size: 13px;
+}
+
+label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 700;
+  font-size: 13px;
+}
+
+select {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 14px;
+  background: #ffffff;
+}
+
+.status {
+  margin: 12px 0 0;
+  font-size: 12px;
+  color: #15803d;
+}

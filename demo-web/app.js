@@ -32,3 +32,17 @@ chatForm.addEventListener("submit", function (event) {
   messageInput.value = "";
   messageInput.focus();
 });
+
+const fileInput = document.getElementById("fileInput");
+const selectedFileName = document.getElementById("selectedFileName");
+
+fileInput.addEventListener("change", function () {
+  const selectedFile = fileInput.files[0];
+
+  if (!selectedFile) {
+    selectedFileName.textContent = "No file selected";
+    return;
+  }
+
+  selectedFileName.textContent = selectedFile.name;
+});

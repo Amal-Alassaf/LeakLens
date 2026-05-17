@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>LeakLens</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <main class="popup">
+    <h1>LeakLens</h1>
+    <p class="subtitle">Local privacy scanner</p>
+
+    <label for="policySelect">Policy</label>
+    <select id="policySelect">
+      <option value="warn">Warn</option>
+      <option value="redact">Redact</option>
+      <option value="block">Block</option>
+    </select>
+
+    <p id="statusText" class="status">Loading...</p>
+  </main>
+
+  <script src="popup.js"></script>
+</body>
+</html>

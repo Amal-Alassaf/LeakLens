@@ -141,13 +141,17 @@ PATTERNS: list[dict] = [
     {
         "type": PIIType.PASSWORD,
         "severity": Severity.HIGH,
-        "confidence": 0.85,
+        "confidence": 0.90,
         "pattern": re.compile(
             r"(?i)"
-            r"(?:password|passwd|pwd|pass|credential|credentials|كلمة\s*السر|كلمة\s*المرور)"
-            r"\s*[:=\s]\s*"
-            r"(\S+)",
-            re.IGNORECASE
+            r"\b("
+            r"login\s+password|password|passwd|pwd|pass|credential|credentials|"
+            r"كلمة\s*السر|كلمة\s*المرور"
+            r")\b"
+            r"\s*"
+            r"(?:is|:|=)"
+            r"\s*"
+            r"(\S+)"
         ),
         "explanation": "Password or credential found",
     },
@@ -223,6 +227,10 @@ class PIIScanner:
             for match in spec["pattern"].finditer(text):
                 start, end = match.start(), match.end()
                 value = match.group()
+
+                if spec["type"] == PIIType.PASSWORD and match.lastindex and match.group(2):
+                    start, end = match.start(2), match.end(2)
+                    value = match.group(2)
 
                 if any(s <= start < e or s < end <= e for s, e in seen_spans):
                     continue
@@ -319,12 +327,6 @@ class PIIScanner:
             return value[:3] + "****" + value[-3:]
 
         if d.pii_type == PIIType.PASSWORD:
-            if ":" in d.value:
-                key, secret = d.value.split(":", 1)
-                return f"{key}:{secret[:2]}***{secret[-2:]}"
-            if "=" in d.value:
-                key, secret = d.value.split("=", 1)
-                return f"{key}={secret[:2]}***{secret[-2:]}"
             return "[PASSWORD REDACTED]"
 
         if d.pii_type == PIIType.CREDIT_CARD:

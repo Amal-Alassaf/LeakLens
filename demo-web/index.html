@@ -20,17 +20,43 @@
         </div>
       </section>
 
-      <form id="chatForm" class="chat-input-area">
+    <section class="attachment-area">
+        <div class="attachment-row">
+            <label for="fileInput" class="attach-button">
+            Attach .txt file
+            </label>
+
+            <input
+            id="fileInput"
+            type="file"
+            accept=".txt,.pdf,.docx"
+            />
+
+            <span id="selectedFileName" class="selected-file-name">
+            No file selected
+            </span>
+
+            <button id="scanFileButton" type="button">
+            Scan file
+            </button>
+        </div>
+
+        <p class="attachment-note">
+            For now, LeakLens only supports .txt files. PDF and DOCX will be added through the backend later.
+        </p>
+        </section>
+
+        <form id="chatForm" class="chat-input-area">
         <textarea
-          id="messageInput"
-          placeholder="Type a message here, for example: My email is haneen@test.com"
-          rows="4"
+            id="messageInput"
+            placeholder="Type a message here, for example: My email is haneen@test.com"
+            rows="4"
         ></textarea>
 
         <button id="sendButton" type="submit">
-          Send
+            Send
         </button>
-      </form>
+        </form>
     </section>
   </main>
 
