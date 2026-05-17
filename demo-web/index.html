@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LeakLens Demo Chat</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main class="chat-page">
+    <section class="chat-container">
+      <header class="chat-header">
+        <h1>LeakLens Demo Chat</h1>
+        <p>Local test page for privacy scanning before sending messages.</p>
+      </header>
+
+      <section id="chatHistory" class="chat-history" aria-label="Chat history">
+        <div class="message system-message">
+          This is a controlled demo page. Type a message below and click Send.
+        </div>
+      </section>
+
+      <form id="chatForm" class="chat-input-area">
+        <textarea
+          id="messageInput"
+          placeholder="Type a message here, for example: My email is haneen@test.com"
+          rows="4"
+        ></textarea>
+
+        <button id="sendButton" type="submit">
+          Send
+        </button>
+      </form>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
