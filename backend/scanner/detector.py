@@ -72,7 +72,6 @@ PATTERNS: list[dict] = [
         "pattern": re.compile(
             r"\b[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}\b"
         ),
-        "redacted": "[EMAIL REDACTED]",
         "explanation": "Email address found",
     },
     {
@@ -85,7 +84,6 @@ PATTERNS: list[dict] = [
             r"[5][0-9]{8}"
             r"(?!\d)"
         ),
-        "redacted": "[PHONE REDACTED]",
         "explanation": "Saudi phone number found",
     },
     {
@@ -100,7 +98,6 @@ PATTERNS: list[dict] = [
             r"\d{4}"
             r"(?!\d)"
         ),
-        "redacted": "[PHONE REDACTED]",
         "explanation": "Phone number found",
     },
     {
@@ -112,7 +109,6 @@ PATTERNS: list[dict] = [
             r"[12]\d{9}"
             r"(?!\d)"
         ),
-        "redacted": "[NATIONAL ID REDACTED]",
         "explanation": "Saudi National ID or Iqama number found",
     },
     {
@@ -129,7 +125,6 @@ PATTERNS: list[dict] = [
             r")"
             r"(?!\d)"
         ),
-        "redacted": "[CREDIT CARD REDACTED]",
         "explanation": "Credit card number found",
     },
     {
@@ -143,7 +138,6 @@ PATTERNS: list[dict] = [
             r"(\S+)",
             re.IGNORECASE
         ),
-        "redacted": "[PASSWORD REDACTED]",
         "explanation": "Password or credential found",
     },
     {
@@ -156,7 +150,6 @@ PATTERNS: list[dict] = [
             r"(?:25[0-5]|2[0-4]\d|[01]?\d\d?)"
             r"\b"
         ),
-        "redacted": "[IP REDACTED]",
         "explanation": "IP address found",
     },
     {
@@ -167,7 +160,6 @@ PATTERNS: list[dict] = [
             r"(?i)(?:passport|جواز\s*السفر)[^\d]*([A-Z]{1,2}\d{6,9})",
             re.IGNORECASE
         ),
-        "redacted": "[PASSPORT REDACTED]",
         "explanation": "Passport number found",
     },
     {
@@ -178,7 +170,6 @@ PATTERNS: list[dict] = [
             r"(?i)(?:dob|date\s+of\s+birth|born|تاريخ\s*الميلاد)[^\d]*"
             r"(\d{1,2}[/\-\.]\d{1,2}[/\-\.]\d{2,4})"
         ),
-        "redacted": "[DOB REDACTED]",
         "explanation": "Date of birth found",
     },
 ]
@@ -235,34 +226,43 @@ class PIIScanner:
                 if confidence < self.min_confidence:
                     continue
 
-                detections.append(Detection(
+                detection = Detection(
                     pii_type=spec["type"],
                     value=value,
-                    redacted=spec["redacted"],
+                    redacted="",
                     severity=spec["severity"],
                     start=start,
                     end=end,
                     confidence=confidence,
                     explanation=spec["explanation"],
-                ))
+                )
+
+                detection.redacted = self._mask_detection(detection)
+                detections.append(detection)
                 seen_spans.append((start, end))
 
-        for match in NAME_PATTERN.finditer(text):
-            start, end = match.start(), match.end()
-            if any(s <= start < e or s < end <= e for s, e in seen_spans):
-                continue
-            name_value = match.group(1) if match.lastindex else match.group()
-            detections.append(Detection(
-                pii_type=PIIType.PERSON_NAME,
-                value=name_value,
-                redacted="[NAME REDACTED]",
-                severity=Severity.LOW,
-                start=match.start(1) if match.lastindex else start,
-                end=match.end(1) if match.lastindex else end,
-                confidence=0.78,
-                explanation="Person name found near identifying keyword",
-            ))
-            seen_spans.append((start, end))
+            for match in NAME_PATTERN.finditer(text):
+                start, end = match.start(), match.end()
+
+                if any(s <= start < e or s < end <= e for s, e in seen_spans):
+                    continue
+
+                name_value = match.group(1) if match.lastindex else match.group()
+
+                detection = Detection(
+                    pii_type=PIIType.PERSON_NAME,
+                    value=name_value,
+                    redacted="",
+                    severity=Severity.LOW,
+                    start=match.start(1) if match.lastindex else start,
+                    end=match.end(1) if match.lastindex else end,
+                    confidence=0.78,
+                    explanation="Person name found near identifying keyword",
+                )
+
+                detection.redacted = self._mask_detection(detection)
+                detections.append(detection)
+                seen_spans.append((start, end))
 
         detections.sort(key=lambda d: d.start)
         redacted = self._redact(text, detections)
@@ -282,11 +282,70 @@ class PIIScanner:
     def _redact(self, text: str, detections: list[Detection]) -> str:
         if not detections:
             return text
+
         result = []
         cursor = 0
+
         for d in detections:
             result.append(text[cursor:d.start])
             result.append(d.redacted)
             cursor = d.end
+
         result.append(text[cursor:])
         return "".join(result)
+
+    def _mask_detection(self, d: Detection) -> str:
+        value = d.value
+
+        if d.pii_type == PIIType.EMAIL:
+            name, domain = value.split("@", 1)
+            return name[:2] + "***@" + domain
+
+        if d.pii_type == PIIType.PHONE:
+            return value[:5] + "******" + value[-2:]
+
+        if d.pii_type == PIIType.NATIONAL_ID:
+            return value[:3] + "****" + value[-3:]
+
+        if d.pii_type == PIIType.PASSWORD:
+            if ":" in d.value:
+                key, secret = d.value.split(":", 1)
+                return f"{key}:{secret[:2]}***{secret[-2:]}"
+            if "=" in d.value:
+                key, secret = d.value.split("=", 1)
+                return f"{key}={secret[:2]}***{secret[-2:]}"
+            return "[PASSWORD REDACTED]"
+
+        if d.pii_type == PIIType.CREDIT_CARD:
+            return "**** **** **** " + value[-4:]
+
+        if d.pii_type == PIIType.IP_ADDRESS:
+            parts = value.split(".")
+            if len(parts) == 4:
+                return f"{parts[0]}.{parts[1]}.*.*"
+            return "[IP REDACTED]"
+
+        if d.pii_type == PIIType.PERSON_NAME:
+            words = value.split()
+            return " ".join(
+                word[0] + "*" * (len(word) - 1)
+                if len(word) > 1 else "*"
+                for word in words
+            )
+
+        if d.pii_type == PIIType.PASSPORT:
+            if len(value) <= 4:
+                return "[PASSPORT REDACTED]"
+            return value[:3] + "*" * max(3, len(value) - 6) + value[-3:]
+
+        if d.pii_type == PIIType.DATE_OF_BIRTH:
+            # Hide day, month, and year completely
+            if "/" in value:
+                return "**/**/****"
+            if "-" in value:
+                return "**-**-****"
+            if "." in value:
+                return "**.**.****"
+            return "[DOB REDACTED]"
+
+        return d.redacted
