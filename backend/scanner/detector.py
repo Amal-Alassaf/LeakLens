@@ -58,7 +58,18 @@ class ScanResult:
             return "No PII detected."
         types = [d.pii_type.value.replace("_", " ") for d in self.detections]
         return f"Detected: {', '.join(set(types))}"
-
+        
+@dataclass
+class Detection:
+    pii_type: PIIType
+    value: str
+    redacted: str
+    severity: Severity
+    start: int
+    end: int
+    confidence: float
+    explanation: str = ""
+    source: str = "regex"
 
 # ---------------------------------------------------------------------------
 # Pattern definitions
