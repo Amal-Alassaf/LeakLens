@@ -149,23 +149,26 @@ PATTERNS: list[dict] = [
         ),
         "explanation": "Credit card number found",
     },
-    {
-        "type": PIIType.PASSWORD,
-        "severity": Severity.HIGH,
-        "confidence": 0.90,
-        "pattern": re.compile(
-            r"(?i)"
-            r"\b("
-            r"login\s+password|password|passwd|pwd|pass|credential|credentials|"
-            r"كلمة\s*السر|كلمة\s*المرور"
-            r")\b"
-            r"\s*"
-            r"(?:is|:|=)"
-            r"\s*"
-            r"(\S+)"
-        ),
-        "explanation": "Password or credential found",
-    },
+{
+    "type": PIIType.PASSWORD,
+    "severity": Severity.HIGH,
+    "confidence": 0.90,
+    "pattern": re.compile(
+        r"(?i)"
+        r"\b(?:"
+        r"my\s+password|password|passwd|pwd|passcode|passphrase|"
+        r"my\s+pass|pass|login\s+password|credential|credentials|"
+        r"كلمة\s*السر|كلمة\s*المرور|الباسورد|باسورد|الباس"
+        r")\b"
+        r"\s*"
+        r"(?:is|was|are|:|=|=>|-)?"
+        r"\s*"
+        r"[\"'`“”‘’]?"
+        r"([^\s\"'`“”‘’]{4,})"
+        r"[\"'`“”‘’]?",
+    ),
+    "explanation": "Password or credential found",
+},
     {
         "type": PIIType.IP_ADDRESS,
         "severity": Severity.MEDIUM,
@@ -280,9 +283,9 @@ class PIIScanner:
                 start, end = match.start(), match.end()
                 value = match.group()
 
-                if spec["type"] == PIIType.PASSWORD and match.lastindex and match.group(2):
-                    start, end = match.start(2), match.end(2)
-                    value = match.group(2)
+                if spec["type"] == PIIType.PASSWORD and match.lastindex and match.group(1):
+                    start, end = match.start(1), match.end(1)
+                    value = match.group(1)
 
                 if any(s <= start < e or s < end <= e for s, e in seen_spans):
                     continue
