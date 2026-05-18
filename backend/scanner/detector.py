@@ -7,6 +7,7 @@ and rule-based heuristics. Designed to be fast and explainable.
 import re
 from dataclasses import dataclass, field
 from enum import Enum
+from backend.scanner.secret_scanner import scan_secrets
 
 
 class PIIType(str, Enum):
@@ -23,6 +24,7 @@ class PIIType(str, Enum):
 
 
 class Severity(str, Enum):
+    CRITICAL = "critical"
     HIGH = "high"
     MEDIUM = "medium"
     LOW = "low"
@@ -30,7 +32,7 @@ class Severity(str, Enum):
 
 @dataclass
 class Detection:
-    pii_type: PIIType
+    pii_type: PIIType | str
     value: str
     redacted: str
     severity: Severity
@@ -38,6 +40,7 @@ class Detection:
     end: int
     confidence: float
     explanation: str = ""
+    source: str = "regex"
 
 
 @dataclass
@@ -56,7 +59,10 @@ class ScanResult:
     def summary(self) -> str:
         if not self.detections:
             return "No PII detected."
-        types = [d.pii_type.value.replace("_", " ") for d in self.detections]
+        types = [
+            (d.pii_type.value if isinstance(d.pii_type, PIIType) else d.pii_type).replace("_", " ")
+            for d in self.detections
+        ]
         return f"Detected: {', '.join(set(types))}"
         
 @dataclass
@@ -223,6 +229,23 @@ class PIIScanner:
         detections: list[Detection] = []
         seen_spans: list[tuple[int, int]] = []
 
+        secret_detections = scan_secrets(text)
+
+        for item in secret_detections:
+            detection = Detection(
+                pii_type=item["pii_type"],
+                value=item["value"],
+                redacted=item["redacted"],
+                severity=Severity(item["severity"]),
+                start=item["start"],
+                end=item["end"],
+                confidence=item["confidence"],
+                explanation=item["explanation"],
+                source=item["source"],
+            )
+            detections.append(detection)
+            seen_spans.append((detection.start, detection.end))
+
         for spec in PATTERNS:
             for match in spec["pattern"].finditer(text):
                 start, end = match.start(), match.end()
@@ -286,7 +309,12 @@ class PIIScanner:
         detections.sort(key=lambda d: d.start)
         redacted = self._redact(text, detections)
 
-        severity_weights = {Severity.HIGH: 1.0, Severity.MEDIUM: 0.5, Severity.LOW: 0.2}
+        severity_weights = {
+            Severity.CRITICAL: 1.2,
+            Severity.HIGH: 1.0,
+            Severity.MEDIUM: 0.5,
+            Severity.LOW: 0.2,
+        }
         raw_score = sum(severity_weights[d.severity] * d.confidence for d in detections)
         risk_score = min(1.0, raw_score / max(1, len(text) / 200))
 
