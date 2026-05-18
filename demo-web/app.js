@@ -65,6 +65,78 @@ function showOverlay(scanResult, policy) {
   document.body.appendChild(overlay);
   setTimeout(() => overlay.remove(), 8000);
 }
+function showFileScanOverlay(result, policy) {
+    // Remove any existing overlay
+    const existing = document.getElementById("leaklens-file-overlay");
+    if (existing) existing.remove();
+
+    // Create overlay container
+    const overlay = document.createElement("div");
+    overlay.id = "leaklens-file-overlay";
+    overlay.style.position = "fixed";
+    overlay.style.top = "24px";
+    overlay.style.right = "24px";
+    overlay.style.width = "360px";
+    overlay.style.maxHeight = "70vh";
+    overlay.style.overflowY = "auto";
+    overlay.style.padding = "16px";
+    overlay.style.borderRadius = "14px";
+    overlay.style.boxShadow = "0 8px 24px rgba(0,0,0,0.3)";
+    overlay.style.fontFamily = "Arial, sans-serif";
+    overlay.style.fontSize = "14px";
+    overlay.style.lineHeight = "1.5";
+    overlay.style.color = "#fff";
+    overlay.style.zIndex = "999999";
+
+    // Background color based on policy / severity
+    if (policy === "block") {
+        overlay.style.background = "#b91c1c"; // red
+    } else if (policy === "warn") {
+        overlay.style.background = "#f59e0b"; // yellow/orange
+        overlay.style.color = "#000";
+    } else {
+        overlay.style.background = "#111827"; // dark neutral
+    }
+
+    // Title
+    const title = document.createElement("div");
+    title.style.fontWeight = "bold";
+    title.style.marginBottom = "8px";
+    title.innerText = `LeakLens Scan Result (${policy.toUpperCase()})`;
+    overlay.appendChild(title);
+
+    // Risk Score
+    const risk = document.createElement("div");
+    risk.style.marginBottom = "8px";
+    risk.innerHTML = `<strong>Risk score:</strong> ${result.risk_score}`;
+    overlay.appendChild(risk);
+
+    // Detected PII
+    if (result.detections && result.detections.length) {
+        const list = document.createElement("ul");
+        list.style.paddingLeft = "16px";
+        list.style.margin = "0 0 8px 0";
+        result.detections.forEach(d => {
+            const li = document.createElement("li");
+            li.style.marginBottom = "4px";
+            li.innerHTML = `<strong>${d.pii_type}</strong>: ${d.redacted} (${d.severity})`;
+            list.appendChild(li);
+        });
+        overlay.appendChild(list);
+    }
+
+    // Action taken
+    const action = document.createElement("div");
+    action.style.fontWeight = "bold";
+    action.style.marginTop = "8px";
+    action.innerText = `Action taken: ${result.action_taken}`;
+    overlay.appendChild(action);
+
+    document.body.appendChild(overlay);
+
+    // Auto-remove after 10 seconds
+    setTimeout(() => overlay.remove(), 10000);
+}
 
 function showErrorOverlay(message) {
   const overlay = document.createElement("div");
@@ -161,7 +233,9 @@ scanFileButton.addEventListener("click", async () => {
 
     const cssClass = mapActionToClass(data.action_taken);
     addMessage(data.output_text || "[blocked]", cssClass);
-    showOverlay(data, policy);
+
+    // --- Use improved overlay ---
+    showFileScanOverlay(data, policy);
 
   } catch (err) {
     console.error("[LeakLens] File scan failed:", err);
@@ -170,6 +244,14 @@ scanFileButton.addEventListener("click", async () => {
     scanFileButton.disabled = false;
     scanFileButton.textContent = "Scan file";
   }
+});
+
+
+
+document.addEventListener("LeakLensMessage", (e) => {
+    const { text, policy } = e.detail;
+    if (policy === "blocked") return; // do not send
+    addMessage(text, "user");
 });
 
 console.log("[LeakLens] Chat and file scanning ready");
