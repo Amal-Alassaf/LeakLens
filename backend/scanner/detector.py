@@ -5,6 +5,7 @@ and rule-based heuristics. Designed to be fast and explainable.
 """
 
 import re
+from backend.scanner.arabic_ner import scan_arabic_ner
 from dataclasses import dataclass, field
 from enum import Enum
 
@@ -20,6 +21,10 @@ class PIIType(str, Enum):
     PERSON_NAME = "person_name"
     BANK_ACCOUNT = "bank_account"
     PASSPORT = "passport"
+
+    LOCATION = "location"
+    ORGANIZATION = "organization"
+    DATE = "date"
 
 
 class Severity(str, Enum):
@@ -196,14 +201,38 @@ NAME_PREFIXES = [
     "mr.", "mrs.", "ms.", "dr.", "prof.",
 ]
 
+ARABIC_NAME_STOP_WORDS = [
+    "ورقمي",
+    "رقمي",
+    "وجوالي",
+    "جوالي",
+    "وهاتفي",
+    "هاتفي",
+    "وبريدي",
+    "بريدي",
+    "وأعيش",
+    "اعيش",
+    "وأعمل",
+    "اعمل",
+    "في",
+]
+
 NAME_PATTERN = re.compile(
     r"(?i)(?:" + "|".join(re.escape(p) for p in NAME_PREFIXES) + r")"
     r"\s+"
-    r"([A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,3}(?=\s*[,.\?!؟،\n]|\s+(?:and|or|but|I |my |the )|$))"
+    r"([A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,3}"
+    r"(?=\s*[,.\?!؟،\n]|\s+(?:and|or|but|I |my |the )|$))"
     r"|(?:" + "|".join(re.escape(p) for p in NAME_PREFIXES) + r")"
-    r"\s+([\u0600-\u06FF]{3,}(?:\s+[\u0600-\u06FF]{3,}){1,3})"
+    r"\s+"
+    r"("
+    r"(?!(?:" + "|".join(re.escape(w) for w in ARABIC_NAME_STOP_WORDS) + r")\b)"
+    r"[\u0600-\u06FF]{3,}"
+    r"(?:\s+"
+    r"(?!(?:" + "|".join(re.escape(w) for w in ARABIC_NAME_STOP_WORDS) + r")\b)"
+    r"[\u0600-\u06FF]{3,}"
+    r"){1,2}"
+    r")"
 )
-
 
 def _luhn_check(number: str) -> bool:
     digits = [int(d) for d in number if d.isdigit()]
@@ -266,15 +295,28 @@ class PIIScanner:
                 if any(s <= start < e or s < end <= e for s, e in seen_spans):
                     continue
 
-                name_value = match.group(1) if match.lastindex else match.group()
+                name_value = None
+                name_start = start
+                name_end = end
+
+                if match.lastindex:
+                    for group_index in range(1, match.lastindex + 1):
+                        if match.group(group_index):
+                            name_value = match.group(group_index)
+                            name_start = match.start(group_index)
+                            name_end = match.end(group_index)
+                            break
+
+                if not name_value:
+                    name_value = match.group()
 
                 detection = Detection(
                     pii_type=PIIType.PERSON_NAME,
                     value=name_value,
                     redacted="",
                     severity=Severity.LOW,
-                    start=match.start(1) if match.lastindex else start,
-                    end=match.end(1) if match.lastindex else end,
+                    start=name_start,
+                    end=name_end,
                     confidence=0.78,
                     explanation="Person name found near identifying keyword",
                 )
@@ -282,6 +324,41 @@ class PIIScanner:
                 detection.redacted = self._mask_detection(detection)
                 detections.append(detection)
                 seen_spans.append((start, end))
+
+        # Arabic NER layer
+        # Regex remains responsible for structured PII.
+        # GLiNER Arabic adds semantic Arabic entities: names, locations, organizations, dates.
+        for ner_item in scan_arabic_ner(text):
+            start = ner_item["start"]
+            end = ner_item["end"]
+
+            if any(s <= start < e or s < end <= e for s, e in seen_spans):
+                continue
+
+            try:
+                pii_type = PIIType(ner_item["pii_type"])
+            except ValueError:
+                continue
+
+            try:
+                severity = Severity(ner_item["severity"])
+            except ValueError:
+                severity = Severity.MEDIUM
+
+            detection = Detection(
+                pii_type=pii_type,
+                value=ner_item["value"],
+                redacted=ner_item["redacted"],
+                severity=severity,
+                start=start,
+                end=end,
+                confidence=ner_item["confidence"],
+                explanation=ner_item["explanation"],
+                source=ner_item["source"],
+            )
+
+            detections.append(detection)
+            seen_spans.append((start, end))
 
         detections.sort(key=lambda d: d.start)
         redacted = self._redact(text, detections)
