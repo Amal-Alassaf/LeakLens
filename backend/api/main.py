@@ -119,6 +119,7 @@ def scan_text(req: ScanRequest):
                 severity=d.severity,
                 confidence=round(d.confidence, 2),
                 explanation=d.explanation,
+                source="spacy",
             )
         )
 

@@ -1,0 +1,50 @@
+[
+  {
+    "id": "email_001",
+    "text": "Contact me at sara@example.com",
+    "expected": [
+      {"pii_type": "email", "value": "sara@example.com"}
+    ]
+  },
+  {
+    "id": "phone_001",
+    "text": "My phone number is +966501234567",
+    "expected": [
+      {"pii_type": "phone", "value": "+966501234567"}
+    ]
+  },
+  {
+    "id": "password_001",
+    "text": "My password is Pa$$w0rd##",
+    "expected": [
+      {"pii_type": "password", "value": "Pa$$w0rd##"}
+    ]
+  },
+  {
+    "id": "api_key_001",
+    "text": "api_key = \"abc1234567890SECRETKEY\"",
+    "expected": [
+      {"pii_type": "api_key", "value": "abc1234567890SECRETKEY"}
+    ]
+  },
+  {
+    "id": "database_url_001",
+    "text": "DATABASE_URL=postgresql://dbuser:dbpassword123@localhost:5432/appdb",
+    "expected": [
+      {"pii_type": "database_url", "value": "postgresql://dbuser:dbpassword123@localhost:5432/appdb"}
+    ]
+  },
+  {
+    "id": "arabic_name_phone_001",
+    "text": "اسمي سارة العبدالله ورقمي +966501234567",
+    "expected": [
+      {"pii_type": "person_name", "value": "سارة العبدالله"},
+      {"pii_type": "phone", "value": "+966501234567"}
+    ]
+  },
+  {
+    "id": "clean_001",
+    "text": "This is a normal sentence with no private data.",
+    "expected": []
+  }
+]
