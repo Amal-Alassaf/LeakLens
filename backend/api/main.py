@@ -29,6 +29,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+def spans_overlap(start_a: int, end_a: int, start_b: int, end_b: int) -> bool:
+    return start_a < end_b and start_b < end_a
+
 scanner = PIIScanner()
 
 # --- Models ---
@@ -78,7 +81,7 @@ def scan_text(req: ScanRequest):
 
     detections_out = [
         DetectionOut(
-            pii_type=d.pii_type.value,
+            pii_type=d.pii_type.value if hasattr(d.pii_type, "value") else d.pii_type,
             value=d.value,
             redacted=d.redacted,
             severity=d.severity.value,
@@ -90,10 +93,24 @@ def scan_text(req: ScanRequest):
     ]
 
     # --- Layer 2: spaCy NER ---
-    already_found = [d.pii_type.value for d in result.detections]
+    already_found = [
+        d.pii_type.value if hasattr(d.pii_type, "value") else d.pii_type
+        for d in result.detections
+    ]
     spacy_detections = spacy_scan(req.text, already_found)
 
     for d in spacy_detections:
+        spacy_start = req.text.find(d.value)
+
+        if spacy_start != -1:
+            spacy_end = spacy_start + len(d.value)
+
+            if any(
+                spans_overlap(spacy_start, spacy_end, existing.start, existing.end)
+                for existing in result.detections
+            ):
+                continue
+
         detections_out.append(
             DetectionOut(
                 pii_type=d.pii_type,
@@ -102,7 +119,6 @@ def scan_text(req: ScanRequest):
                 severity=d.severity,
                 confidence=round(d.confidence, 2),
                 explanation=d.explanation,
-                source="spacy",
             )
         )
 
