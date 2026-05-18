@@ -91,27 +91,23 @@ function setupInterception() {
   chatForm.dataset.leaklensAttached = "true";
 
   chatForm.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const text = textarea.value.trim();
-    if (!text) return;
+      e.preventDefault();
+      const text = textarea.value.trim();
+      if (!text) return;
 
-    const policy = await getCurrentPolicy();
-    try {
-      const result = await scanText(text, policy);
-      showOverlay(result, policy);
+      const policy = await getCurrentPolicy();
+      try {
+          const result = await scanText(text, policy);
+          showOverlay(result, policy);
 
-      if (policy === "redact") textarea.value = result.output_text;
-      if (policy === "block") {
-        console.warn("[LeakLens] Message blocked:", text);
-        return;
+          if (!handlePolicyResult(result, policy, textarea)) return;
+
+          chatForm.submit();
+      } catch (err) {
+          console.error("[LeakLens] Scan failed:", err);
+          showErrorOverlay("Scan failed. Is the backend running?");
+          chatForm.submit();
       }
-
-      chatForm.submit(); // send message
-    } catch (err) {
-      console.error("[LeakLens] Scan failed:", err);
-      showErrorOverlay("Scan failed. Is the backend running?");
-      chatForm.submit(); // optional: allow sending if failed
-    }
   });
 }
 
@@ -157,6 +153,41 @@ function setupFileScanning() {
       scanFileButton.textContent = "Scan file";
     }
   });
+}
+
+function handlePolicyResult(result, policy, textarea) {
+    switch(policy) {
+        case "redact":
+            textarea.value = result.output_text;
+            showOverlay(result, policy);
+            return "send";
+        case "block":
+            showErrorOverlay("Message blocked due to sensitive content");
+            showOverlay(result, policy);
+            return "block";
+        case "warn":
+            showOverlay(result, policy);
+            showWarningOverlay("Message contains sensitive data");
+            return "send";
+        default:
+            return "send";
+    }
+}
+
+function showWarningOverlay(message) {
+    let overlay = document.createElement("div");
+    overlay.id = "leaklens-warning-overlay";
+    overlay.innerText = message;
+    overlay.style.position = "fixed";
+    overlay.style.bottom = "24px";
+    overlay.style.right = "24px";
+    overlay.style.background = "#f59e0b";
+    overlay.style.color = "#000";
+    overlay.style.padding = "12px";
+    overlay.style.borderRadius = "10px";
+    overlay.style.zIndex = "999999";
+    document.body.appendChild(overlay);
+    setTimeout(() => overlay.remove(), 5000);
 }
 
 // --- Initialize ---
