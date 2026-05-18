@@ -44,6 +44,7 @@ class DetectionOut(BaseModel):
     severity: str
     confidence: float
     explanation: str
+    source: str = "unknown"
 
 
 class ScanResponse(BaseModel):
@@ -83,6 +84,7 @@ def scan_text(req: ScanRequest):
             severity=d.severity.value,
             confidence=round(d.confidence, 2),
             explanation=d.explanation,
+            source=d.source,
         )
         for d in result.detections
     ]

@@ -1,22 +1,29 @@
 """
-PII Guardian — spaCy NER Layer
-Uses a local spaCy model to detect names, orgs, and locations.
-Runs fully offline — no API key needed.
+PII Guardian — Limited spaCy NER Layer
+
+Purpose:
+- Use local spaCy only as a conservative English PERSON detector.
+- Structured PII stays with regex.
+- Arabic semantic PII stays with NAMAA / GLiNER.
+- Runs fully offline.
 """
 
-import spacy
+from __future__ import annotations
+
+import re
 from dataclasses import dataclass
 
-# Map spaCy entity labels to our PII types
-LABEL_MAP = {
-    "PERSON":   ("person_name", "low",    0.82),
-    "ORG":      ("organization","low",    0.75),
-    "GPE":      ("location",    "low",    0.70),  # Countries, cities
-    "LOC":      ("location",    "low",    0.70),  # Mountains, rivers
-    "DATE":     ("date_of_birth","low",   0.65),  # Only flag if near DOB keywords
-    "MONEY":    ("financial",   "medium", 0.78),
-    "CARDINAL": (None,          None,     0.00),  # Skip plain numbers
+import spacy
+
+
+ALLOWED_LABELS = {
+    "PERSON": ("person_name", "low", 0.82),
 }
+
+BAD_ENTITY_CHARS = re.compile(r"[@+\d:/\\]|https?://|www\.", re.IGNORECASE)
+ARABIC_CHARS = re.compile(r"[\u0600-\u06FF]")
+LATIN_NAME = re.compile(r"^[A-Za-z][A-Za-z'.-]*(?:\s+[A-Za-z][A-Za-z'.-]*){1,3}$")
+
 
 @dataclass
 class SpacyDetection:
@@ -25,61 +32,90 @@ class SpacyDetection:
     severity: str
     confidence: float
     explanation: str
+    source: str = "spacy"
 
     @property
     def redacted(self) -> str:
-        labels = {
-            "person_name":  "[NAME REDACTED]",
-            "organization": "[ORG REDACTED]",
-            "location":     "[LOCATION REDACTED]",
-            "financial":    "[FINANCIAL INFO REDACTED]",
-            "date_of_birth":"[DOB REDACTED]",
-        }
-        return labels.get(self.pii_type, "[REDACTED]")
+        if self.pii_type == "person_name":
+            return self._mask_name(self.value)
+        return "[REDACTED]"
+
+    @staticmethod
+    def _mask_name(value: str) -> str:
+        words = value.split()
+        return " ".join(
+            word[0] + "*" * (len(word) - 1)
+            if len(word) > 1
+            else "*"
+            for word in words
+        )
 
 
-# Load model once at import time
 try:
     nlp = spacy.load("en_core_web_sm")
     SPACY_AVAILABLE = True
 except OSError:
     SPACY_AVAILABLE = False
-    print("⚠️  spaCy model not found. Run: py -3.11 -m spacy download en_core_web_sm")
+    print("⚠️ spaCy model not found. Run: python -m spacy download en_core_web_sm")
 
 
-def spacy_scan(text: str, already_found_types: list[str] = None) -> list[SpacyDetection]:
+def _looks_like_safe_english_name(value: str) -> bool:
+    value = value.strip()
+
+    if len(value) < 3:
+        return False
+
+    if ARABIC_CHARS.search(value):
+        return False
+
+    if BAD_ENTITY_CHARS.search(value):
+        return False
+
+    if not LATIN_NAME.fullmatch(value):
+        return False
+
+    return True
+
+
+def spacy_scan(text: str, already_found_types: list[str] | None = None) -> list[SpacyDetection]:
     """
-    Run spaCy NER on text.
-    Skips entity types already caught by the regex scanner.
+    Conservative spaCy layer.
+
+    Only returns English PERSON entities that look like real names.
+    Does not detect structured PII.
+    Does not process Arabic entities.
     """
     if not SPACY_AVAILABLE:
         return []
 
     already = set(already_found_types or [])
+
+    if "person_name" in already:
+        return []
+
     doc = nlp(text)
-    detections = []
+    detections: list[SpacyDetection] = []
 
     for ent in doc.ents:
-        mapping = LABEL_MAP.get(ent.label_)
+        mapping = ALLOWED_LABELS.get(ent.label_)
         if not mapping:
+            continue
+
+        value = ent.text.strip()
+
+        if not _looks_like_safe_english_name(value):
             continue
 
         pii_type, severity, confidence = mapping
 
-        # Skip if this type was already found by regex
-        if pii_type in already or pii_type is None:
-            continue
-
-        # Skip very short matches (likely false positives)
-        if len(ent.text.strip()) < 3:
-            continue
-
-        detections.append(SpacyDetection(
-            pii_type=pii_type,
-            value=ent.text.strip(),
-            severity=severity,
-            confidence=confidence,
-            explanation=f"Detected by NER model as {ent.label_}",
-        ))
+        detections.append(
+            SpacyDetection(
+                pii_type=pii_type,
+                value=value,
+                severity=severity,
+                confidence=confidence,
+                explanation="Detected English person name using local spaCy NER",
+            )
+        )
 
     return detections
