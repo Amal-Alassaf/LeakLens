@@ -182,3 +182,18 @@ body {
   background: #9ca3af;
   cursor: not-allowed;
 }
+
+.message.warn {
+  background: #facc15;  /* yellow */
+  color: #1f2937;
+}
+
+.message.block {
+  background: #ef4444;  /* red */
+  color: #ffffff;
+}
+
+.message.redact {
+  background: #f97316;  /* orange */
+  color: #ffffff;
+}

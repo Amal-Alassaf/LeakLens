@@ -11,6 +11,9 @@ from typing import Literal
 
 from backend.scanner.detector import PIIScanner
 from backend.scanner.spacy_ner import spacy_scan
+import spacy
+nlp = spacy.load("en_core_web_sm")
+
 
 app = FastAPI(
     title="PII Guardian API",

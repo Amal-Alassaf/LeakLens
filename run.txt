@@ -1,1 +1,1 @@
-py -3.11 -m uvicorn backend.api.main:app --reload
+python -m uvicorn backend.api.main:app --reload
