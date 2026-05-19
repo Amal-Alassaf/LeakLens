@@ -240,6 +240,10 @@ def scan_secrets(text: str) -> list[dict[str, Any]]:
             start = match.start(1) if match.lastindex else match.start()
             end = match.end(1) if match.lastindex else match.end()
 
+            while value and value[-1] in ".,;:!?،؛؟":
+                value = value[:-1]
+                end -= 1
+
             detections.append(
                 {
                     "pii_type": item["pii_type"],

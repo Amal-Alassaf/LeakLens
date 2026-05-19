@@ -1,0 +1,87 @@
+[
+  {
+    "id": "arabic_customer_support",
+    "text": "مرحبًا، أنا سارة العبدالله. عندي مشكلة في حسابي، رقم جوالي +966501234567 وبريدي sara.alabdullah@example.com. أنا ساكنة في جدة وأحتاج تحديث بياناتي اليوم.",
+    "expected_types": ["person_name", "phone", "email", "location"]
+  },
+  {
+    "id": "arabic_employee_admin",
+    "text": "السلام عليكم، أنا أحمد السالم من شركة النور للتقنية. أرسلت لكم رقم الهوية 1023456789 سابقًا، ورقمي للتواصل +966551112233. أرجو إرسال التحديث إلى ahmad.salem@example.com.",
+    "expected_types": ["person_name", "organization", "national_id", "phone", "email"]
+  },
+  {
+    "id": "arabic_secret_leak",
+    "text": "يا فريق الدعم، المشكلة في بيئة الاختبار. استخدموا api_key = \"abc1234567890SECRETKEY\" مؤقتًا، وقاعدة البيانات هي DATABASE_URL=postgresql://appuser:dbpass123@localhost:5432/leaklens_db. لا ترسلونها خارج الفريق.",
+    "expected_types": ["api_key", "database_url"]
+  },
+  {
+    "id": "arabic_password_email",
+    "text": "دخلت على حساب العميل، وكان الباسورد: Pa$$w0rd## والبريد المرتبط بالحساب هو client.test@example.com. أحتاج أتأكد هل أقدر أرسل هذه التفاصيل للدعم؟",
+    "expected_types": ["password", "email"]
+  },
+  {
+    "id": "arabic_credit_card",
+    "text": "احتاج أراجع عملية دفع للعميل. رقم البطاقة المستخدمة هو 4111111111111111 والبريد المرتبط بالطلب هو customer.pay@example.com.",
+    "expected_types": ["credit_card", "email"]
+  },
+  {
+    "id": "arabic_safe_meeting",
+    "text": "ناقشنا اليوم خطة تحسين واجهة المستخدم وتجربة البحث داخل النظام، واتفق الفريق على مراجعة التصميم غدًا قبل الاجتماع القادم.",
+    "expected_types": []
+  },
+  {
+    "id": "arabic_safe_project",
+    "text": "تم تحديث لوحة التحكم وإضافة بعض التحسينات على صفحة التقارير، وسيتم اختبار النسخة الجديدة قبل نهاية الأسبوع.",
+    "expected_types": []
+  },
+  {
+    "id": "arabic_safe_support_general",
+    "text": "راجع فريق الدعم مشكلة المستخدم داخل النظام، وتم تحديث صفحة التقارير بدون مشاركة أي بيانات شخصية.",
+    "expected_types": []
+  },
+  {
+    "id": "arabic_safe_design_general",
+    "text": "اتفق الفريق على تحسين التصميم وتجربة المستخدم في التطبيق قبل الاجتماع القادم.",
+    "expected_types": []
+  },
+  {
+    "id": "arabic_mixed_customer_payment",
+    "text": "طلب العميل تحديث بيانات الدفع. رقم البطاقة 4111111111111111 ورقم الجوال +966501112233 والبريد payment.user@example.com.",
+    "expected_types": ["credit_card", "phone", "email"]
+  },
+  {
+    "id": "arabic_passport_case",
+    "text": "أرسل العميل صورة جواز السفر ورقمه A12345678 مع بريده traveler@example.com.",
+    "expected_types": ["passport", "email"]
+  },
+  {
+    "id": "arabic_ip_case",
+    "text": "لاحظنا محاولة دخول من العنوان 192.168.1.15 على حساب المستخدم.",
+    "expected_types": ["ip_address"]
+  },
+  {
+    "id": "arabic_bearer_token",
+    "text": "لا ترسل هذا الهيدر للنموذج: Authorization: Bearer abcdefghijklmnopqrstuvwxyz1234567890",
+    "expected_types": ["bearer_token"]
+  },
+  {
+    "id": "arabic_db_password",
+    "text": "تم وضع كلمة مرور قاعدة البيانات مؤقتًا هكذا DB_PASSWORD=myDatabasePassword123 داخل الرسالة.",
+    "expected_types": ["database_password"]
+  },
+  {
+    "id": "english_basic_pii",
+    "text": "My name is Sarah Johnson. Email me at sarah@example.com. My phone is +966501234567. My password is TempPass2026##",
+    "expected_types": ["person_name", "email", "phone", "password"]
+  },
+  {
+    "id": "english_secret",
+    "text": "Authorization: Bearer abcdefghijklmnopqrstuvwxyz1234567890 and DB_PASSWORD=myDatabasePassword123",
+    "expected_types": ["bearer_token", "database_password"]
+  },
+  {
+    "id": "english_credit_card",
+    "text": "The customer paid with card 4111111111111111 and asked to send the receipt to billing@example.com.",
+    "expected_types": ["credit_card", "email"]
+  }
+]

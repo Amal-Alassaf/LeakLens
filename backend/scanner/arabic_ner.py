@@ -29,6 +29,85 @@ ARABIC_GENERIC_PERSON_PHRASES = {
     "العميلة",
     "المستخدم",
     "المستخدمة",
+    "الفريق",
+    "فريق",
+    "النظام",
+    "المكتب",
+    "التصميم",
+    "الاجتماع",
+    "المستخدم",
+    "العميل",
+    "الدعم",
+}
+
+ARABIC_GENERIC_ENTITY_PHRASES = {
+    # Generic people / teams
+    "الفريق",
+    "فريق",
+    "فريق العمل",
+    "فريق الدعم",
+    "الدعم",
+    "العميل",
+    "العملاء",
+    "المستخدم",
+    "المستخدمين",
+    "الموظف",
+    "الموظفين",
+    "المدير",
+    "المسؤول",
+    "الإدارة",
+    "القسم",
+
+    # Generic places / systems / business words
+    "النظام",
+    "المنصة",
+    "التطبيق",
+    "الموقع",
+    "الصفحة",
+    "لوحة التحكم",
+    "واجهة المستخدم",
+    "المكتب",
+    "المكتب الرئيسي",
+
+    # Generic meeting/project words
+    "الاجتماع",
+    "التصميم",
+    "التقارير",
+    "المشروع",
+    "الخطة",
+    "البحث",
+    "النسخة",
+    "التحديث",
+    "التحسينات",
+    "الاجتماع القادم",
+    "الاجتماع القادم.",
+    "الاجتماع القادم،",
+    "الاجتماع القادم؟",
+
+    # Dates/time words that should not be treated as sensitive alone
+    "اليوم",
+    "غدًا",
+    "غدا",
+    "أمس",
+    "الأسبوع",
+    "الشهر",
+    "السنة",
+}
+
+ARABIC_GENERIC_ORGANIZATION_PHRASES = {
+    "الفريق",
+    "فريق",
+    "فريق الدعم",
+    "الدعم",
+    "النظام",
+    "المكتب",
+    "التصميم",
+    "الاجتماع",
+    "المستخدم",
+    "العميل",
+    "العملاء",
+    "الإدارة",
+    "القسم",
 }
 
 ARABIC_GENERIC_LOCATION_PHRASES = {
@@ -94,6 +173,10 @@ def scan_arabic_ner(text: str, threshold: float = 0.80) -> list[dict[str, Any]]:
     for entity in entities:
         label = entity["label"]
         value = entity["text"]
+        value = value.strip()
+
+        if value in ARABIC_GENERIC_ENTITY_PHRASES:
+            continue
 
         if not should_keep_arabic_entity(label, value):
             continue
