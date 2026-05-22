@@ -1,163 +1,139 @@
+# LeakLens – Local PII & Secrets Guardian for AI Prompts
 
-# LeakLens
+**Protect sensitive information in Arabic and English prompts before they reach AI tools.**
 
-LeakLens is a local privacy scanner that detects PII before a message or file is sent to an AI/chat flow.
 
-It can **warn**, **redact**, or **block** sensitive content.
+LeakLens is a browser-integrated privacy layer built during an AI hackathon. It detects PII (names, phone numbers, emails, IDs), secrets (API keys, database credentials, passwords), and sensitive content in real time, letting users **warn**, **redact**, or **block** risky prompts.
+
+---
+
+## Problem Statement
+
+Users often paste real customer messages into AI tools, creating serious privacy risks. LeakLens ensures sensitive data **never leaves the browser** accidentally.
+
+---
 
 ## Features
 
-- Text scanning
-- File scanning: `.txt`, `.pdf`
-- Demo chat page
-- Browser extension flow
-- Regex detection
-- spaCy NER detection
-- Arabic NER integration
-- Offline model support
+* **Layered Detection**: Regex, secret scanner, Arabic NER, spaCy for English.
+* **Policy Enforcement**:
 
-## Detected PII
+  * `warn` – alerts the user but allows submission.
+  * `redact` – replaces sensitive values while keeping the text usable.
+  * `block` – stops high-risk text from being submitted.
+* **Multi-language Support**: Arabic + English PII detection.
+* **Extensible**: Add new detection rules or datasets easily.
 
-- Email
-- Phone number
-- National ID / Iqama
-- Passport
-- Credit card
-- Date of birth
-- IP address
-- Password
-- Person name
-- Organization
-- Location
+---
 
-## Requirements
+## Demo Setup & How to Run
 
-- Python 3.11
-- Git
-- Node not required for the demo page
+### 1. Backend Server
 
-## Setup
-
-Clone the repository:
-
-```bash
-git clone https://github.com/Amal-Alassaf/LeakLens.git
-cd LeakLens
-````
-
-Create and activate a virtual environment:
-
-```bash
-py -3.11 -m venv .venv
-.venv\Scripts\activate
-```
-
-Install dependencies:
-
-```bash
-py -3.11 -m pip install -r requirements.txt
-```
-
-Install the spaCy model:
-
-```bash
-python -m spacy download en_core_web_sm
-```
-
-## Run the backend
-
-From the project root:
+From the root `/LeakLens/` directory, run:
 
 ```bash
 python -m uvicorn backend.api.main:app --reload
 ```
 
-Backend URL:
+This starts the API server for scanning.
 
-```text
-http://127.0.0.1:8000
-```
+### 2. Web Interface
 
-API docs:
-
-```text
-http://127.0.0.1:8000/docs
-```
-
-## Run the demo page
-
-Open a second terminal:
+From the `/LeakLens/demo-web/` directory, run:
 
 ```bash
-cd demo-web
-python -m http.server 5500
+py -3.11 -m http.server 5500
 ```
 
-Open:
+This serves the demo page locally on port 5500.
+
+### 3. Browser Extension
+
+1. Open `chrome://extensions/` in Chrome or Edge.
+2. Enable **Developer Mode**.
+3. Load the `extension/` folder.
+
+### 4. Using LeakLens with ChatGPT
+
+1. Open `https://chatgpt.com/`.
+2. Ensure the extension is enabled.
+3. Paste text prompts into the input box; LeakLens will automatically scan based on the selected policy (**warn**, **redact**, **block**).
+
+---
+
+## Example Inputs
+
+### Arabic (multi-PII)
 
 ```text
-http://127.0.0.1:5500
+مرحبًا، أنا سارة العبدالله. رقمي +966501234567 وبريدي sara.alabdullah@example.com. استخدمت مؤقتًا api_key = "abc1234567890SECRETKEY" وقاعدة البيانات DATABASE_URL=postgresql://appuser:dbpass123@localhost:5432/leaklens_db
 ```
 
-## Test commands
-
-Check backend health:
-
-```bash
-curl http://127.0.0.1:8000/health
-```
-
-Scan text:
-
-```bash
-curl -X POST http://127.0.0.1:8000/scan ^
-  -H "Content-Type: application/json" ^
-  -d "{\"text\":\"My email is ahmed@test.com and my ID is 1098765432\",\"policy\":\"redact\"}"
-```
-
-Run scanner tests:
-
-```bash
-py -3.11 -m backend.tests.test_scanner
-```
-
-## Policies
-
-| Policy   | Behavior                                            |
-| -------- | --------------------------------------------------- |
-| `warn`   | Allows the content but shows a warning              |
-| `redact` | Replaces sensitive values with masked/redacted text |
-| `block`  | Blocks the message or file content                  |
-
-## Project structure
+### English (multi-PII)
 
 ```text
-LeakLens/
-├── backend/
-│   ├── api/
-│   │   └── main.py
-│   └── scanner/
-│       ├── detector.py
-│       ├── spacy_ner.py
-│       └── arabic_ner.py
-├── demo-web/
-│   ├── index.html
-│   ├── app.js
-│   └── style.css
-├── extension/
-│   ├── content.js
-│   ├── popup.html
-│   ├── popup.js
-│   └── popup.css
-├── tools/
-├── requirements.txt
-└── README.md
+My name is Sarah Johnson. Email: sarah@example.com. Phone: +966501234567. Temporary password: TempPass2026##
 ```
+
+### Payment / Credit Card
+
+```text
+Customer payment: card 4111111111111111, email billing@example.com, phone +966501112233.
+```
+
+---
+
+## Evaluation & Test Bank
+
+LeakLens includes a curated test bank: `tools/demo_test_bank.json`
+
+Run evaluation:
+
+```bash
+python -m tools.run_demo_test_bank
+```
+
+This produces precision, recall, and F1 metrics for each PII type.
+
+---
+
+## Directory Overview
+
+```text
+backend/      # Scanner logic & API
+demo-web/     # Web interface
+extension/    # Browser extension (Chrome/Edge)
+models/       # Pretrained Arabic GLiNER NER model (not included)
+tools/        # Scripts, payloads, test bank
+docs/         # Architecture notes, demo guide
+README.md
+requirements.txt
+.gitignore
+LICENSE
+```
+
+---
 
 ## Notes
 
-The local model folder is ignored by Git. Download or place offline models locally when needed.
+* **Local-first**: No sensitive text leaves your machine.
+* **Extensible**: Add new PII types or policies in `backend/scanner`.
+* **Arabic support**: NER model tuned for Arabic, with false-positive filters.
+* **Hackathon-ready**: Clean demo flow for LinkedIn sharing.
 
-## Built for
+---
 
-AI Hackathon — Cybersecurity & AI Track
+## Model Instructions
+
+The Arabic GLiNER model is loaded locally from `models/gliner_arabic`. It is **not included** in the repository due to size.
+
+```bash
+git clone https://huggingface.co/NAMAA-Space/gliner_arabic-v2.1 models/gliner_arabic
+```
+
+---
+
+## License
+
+MIT License. See [LICENSE](LICENSE).
