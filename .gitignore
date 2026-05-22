@@ -1,6 +1,32 @@
+# Python
 __pycache__/
-*.pyc
+*.py[cod]
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+
+# Virtual environments
 .venv/
 venv/
-.env
+env/
+
+# Local models
 models/
+*.bin
+*.safetensors
+
+# Local files
+.env
+.env.*
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+
+# Node / web
+node_modules/
+
+# Logs
+*.log
