@@ -26,33 +26,61 @@ Users often paste real customer messages into AI tools, creating serious privacy
 
 ---
 
-## Demo Setup & How to Run
+## Installation & Setup (Detailed)
 
-### 1. Backend Server
+### 1. Clone the Repo
 
-From the root `/LeakLens/` directory, run:
+```bash
+git clone https://github.com/Amal-Alassaf/LeakLens.git
+cd LeakLens
+```
+
+### 2. Create & Activate Virtual Environment
+
+```bash
+# Linux/macOS
+python3 -m venv .venv
+source .venv/bin/activate
+
+# Windows (PowerShell)
+python -m venv .venv
+.venv\Scripts\activate
+```
+
+### 3. Install Dependencies
+
+```bash
+pip install --upgrade pip
+pip install -r requirements.txt
+```
+
+### 4. Download the Arabic GLiNER Model
+
+```bash
+git clone https://huggingface.co/NAMAA-Space/gliner_arabic-v2.1 models/gliner_arabic
+```
+
+> This step is required because the model is not included in the repo due to size.
+
+### 5. Run the Backend
 
 ```bash
 python -m uvicorn backend.api.main:app --reload
 ```
 
-This starts the API server for scanning.
-
-### 2. Web Interface
-
-From the `/LeakLens/demo-web/` directory, run:
+### 6. Serve the Web Demo
 
 ```bash
+cd demo-web
 py -3.11 -m http.server 5500
 ```
 
-This serves the demo page locally on port 5500.
+### 7. Load the Browser Extension
 
-### 3. Browser Extension
+1. Open `chrome://extensions/` in Chrome/Edge
+2. Enable **Developer Mode**
+3. Load the `extension/` folder
 
-1. Open `chrome://extensions/` in Chrome or Edge.
-2. Enable **Developer Mode**.
-3. Load the `extension/` folder.
 
 ### 4. Using LeakLens with ChatGPT
 
